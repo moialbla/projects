@@ -1,0 +1,36 @@
+trigger: none
+
+variables:
+- group: PipelineVars-Global
+- name: workingDirectory
+  value: ''
+- name: stage
+  value: 'stage'
+- name: displayName
+  value: 'displayName'
+- name: tfvarsFileArgs
+  value: '-var-file=tfvars/secrets.tfvars'
+
+- group: PipelineVars-Dev
+
+stages:
+- stage: $(stage)
+  displayName: $(displayName)
+  jobs:
+    - job:
+      pool:
+        name: $(agentPool)
+        vmImage: $(imagePool)
+      workspace:
+        clean: all
+      steps:
+      - template: /infrastructure/pipelines/terraform-setup.yaml
+        parameters:
+          WORKING_DIRECTORY: $(workingDirectory)
+          TF_VERSION: $(tfVersion)
+          TF_RESOURCE_GROUP_NAME: $(tfResourceGroupName)
+          TF_STORAGE_ACCOUNT_NAME: $(tfStorageAccountName)
+          TF_STORAGE_CONTAINER_NAME: $(tfStorageAccountContainer)
+          TF_AZURE_BACKEND_SUBSCRIPTION: '$(tfArmServiceConnection)'
+          TF_RESOURCE_GROUP_LOCATION: $(tfResourceGroupLocation)
+          BACKEND_AZURE_RM_KEY: $(tfStateETFResources)

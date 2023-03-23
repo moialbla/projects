@@ -1,0 +1,64 @@
+parameters:
+- name: WORKING_DIRECTORY
+- name: TF_VERSION
+- name: TF_RESOURCE_GROUP_NAME
+- name: TF_STORAGE_ACCOUNT_NAME
+- name: TF_STORAGE_CONTAINER_NAME
+- name: TF_AZURE_BACKEND_SUBSCRIPTION
+  default: ''
+- name: TF_RESOURCE_GROUP_LOCATION
+- name: BACKEND_AZURE_RM_KEY
+
+steps:
+
+- task: TerraformInstaller@0
+  displayName: Terraform Install
+  inputs:
+    terraformVersion: ${{ parameters.TF_VERSION }}
+     
+- template: /build/pipeline-templates/terraform-install.yaml
+  parameters:
+    TF_VERSION: ${{ parameters.TF_VERSION }}
+
+- task: TerraformTaskV3@3
+  displayName: Terraform init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    commandOptions: '-upgrade '
+    workingDirectory: '${{ parameters.WORKING_DIRECTORY }}'
+    backendServiceArm: '${{ parameters.TF_AZURE_BACKEND_SUBSCRIPTION }}' 
+    backendAzureRmResourceGroupName: '${{ parameters.TF_RESOURCE_GROUP_NAME }}'
+    backendAzureRmStorageAccountName: '${{ parameters.TF_STORAGE_ACCOUNT_NAME }}'
+    backendAzureRmContainerName: '${{ parameters.TF_STORAGE_CONTAINER_NAME }}'
+    backendAzureRmKey: '${{ parameters.BACKEND_AZURE_RM_KEY }}'
+
+- task: TerraformTaskV3@3
+  displayName: Terraform validate 
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: '${{ variables.workingDirectory }}'
+
+- task: TerraformTaskV3@3
+  displayName: Terraform plan 
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    commandOptions: '-out=plan.out'
+    workingDirectory: '${{ parameters.WORKING_DIRECTORY }}'
+    environmentServiceNameAzureRM: '${{ parameters.TF_AZURE_BACKEND_SUBSCRIPTION }}'
+    backendAzureRmResourceGroupName: '${{ parameters.TF_RESOURCE_GROUP_NAME }}'
+
+- task: TerraformTaskV3@3
+  displayName: 'Terraform Show'
+  inputs:
+    command: show
+    commandOptions: 'plan.out'
+    workingDirectory: '${{ parameters.WORKING_DIRECTORY }}'
+    backendServiceArm: '${{ parameters.TF_AZURE_BACKEND_SUBSCRIPTION }}' 
+    backendAzureRmResourceGroupName: '${{ parameters.TF_RESOURCE_GROUP_NAME }}'
+    environmentServiceNameAzureRM: '${{ parameters.TF_AZURE_BACKEND_SUBSCRIPTION }}' 
+    backendAzureRmStorageAccountName: '${{ parameters.TF_STORAGE_ACCOUNT_NAME }}'
+    backendAzureRmContainerName: '${{ parameters.TF_STORAGE_CONTAINER_NAME }}'
+    backendAzureRmKey: '${{ parameters.BACKEND_AZURE_RM_KEY }}'
